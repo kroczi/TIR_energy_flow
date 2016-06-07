@@ -1,12 +1,9 @@
+import ConfigParser
 from PyQt4 import QtCore
 
+import sys
+
 from interface import Interface
-
-try:
-    import cPickle as pickle
-except ImportError:
-    import pickle
-
 import ospf
 
 
@@ -28,19 +25,43 @@ def log(msg):
 
 
 class Router(object):
-    def __init__(self, hostname, demand):
-        self._hostname = hostname
-        self._demand = demand
-        self._lsdb = ospf.Database()
-        self._links = {}
-        self._neighbors = {}
-        self._seen = {}
-        self._energy_flow = {}
-        self._init_timers()
-        self._interface = Interface(self)
+    def __init__(self, hostname=None, demand=None):
+        if hostname is not None:
+            self._hostname = hostname
+            self._demand = demand
+            self._lsdb = ospf.Database()
+            self._links = {}
+            self._neighbors = {}
+            self._seen = {}
+            self._energy_flow = {}
+            self._init_timers()
+            self._interface = Interface(self)
 
     def __del__(self):
         self.stop()
+
+    def init_router(self, name, demand=0):
+        if not name.endswith(".cfg"):
+            self.__init__(name, demand)
+            return
+        print(name)
+        cfg = ConfigParser.SafeConfigParser()
+        try:
+            cfg.read(str(name))
+        except ConfigParser.MissingSectionHeaderError:
+            print('MissingSectionHeaderError')
+            sys.exit(-1)
+
+        hostname = cfg.get('Router', 'hostname')
+        demand = int(cfg.get('Router', 'demand'))
+        self.__init__(hostname, demand)
+
+        links = [i for i in cfg.sections() if i.startswith('Link')]
+        for link in links:
+            link_id = cfg.get(link, 'link')
+            cost = int(cfg.get(link, 'cost'))
+            capacity = int(cfg.get(link, 'capacity'))
+            self.add_link(link_id, cost, capacity)
 
     def _init_timers(self):
         log('Init timers.')
@@ -65,7 +86,7 @@ class Router(object):
         log('Sending HelloPacket.')
         for link, attr in self._links.iteritems():
             packet = ospf.HelloPacket(self._hostname, (link, attr[0], attr[1]))
-            self._interface.transmit(packet, link)
+            self.transmit(packet, link)
         for neighbor_id in self._seen:
             if neighbor_id not in self._neighbors:
                 self._sync_lsdb(neighbor_id)
@@ -98,7 +119,7 @@ class Router(object):
 
         for data in self._neighbors.values():
             if data[0] != source_link:
-                self._interface.transmit(packet, data[0])
+                self.transmit(packet, data[0])
 
     def _advertise(self):
         log('Advertise.')
@@ -134,7 +155,7 @@ class Router(object):
             self._advertise()
             # Sync LSDB with neighbor
             for lsa in self._lsdb.values():
-                self._interface.transmit(lsa, self._neighbors[neighbor_id][0])
+                self.transmit(lsa, self._neighbors[neighbor_id][0])
 
     def _handle_hello(self, packet):
         neighbor_id = packet.router_id
@@ -166,8 +187,25 @@ class Router(object):
         elif packet.adv_router == self._hostname and packet.seq_no == 1:
             self._advertise()
 
+    def _handle_admin(self, packet):
+        if packet.action == ospf.AdminPacket.ADD_LINK:
+            if self._hostname == packet.router_id or self._hostname == packet.another_router_id:
+                self.add_link(packet.link, packet.cost, packet.capacity)
+        elif packet.action == ospf.AdminPacket.REMOVE_LINK:
+            self.remove_link(packet.link)
+        elif packet.action == ospf.AdminPacket.UPDATE_DEMAND:
+            if self._hostname == packet.router_id:
+                self.update_demand(packet.demand)
+        elif packet.action == ospf.AdminPacket.GENERATE_BREAKDOWN:
+            if self._hostname == packet.router_id:
+                self.stop()
+        elif packet.action == ospf.AdminPacket.RESET_ROUTER:
+            if self._hostname == packet.router_id:
+                self.reset_router(packet.filename, packet.another_router_id, packet.demand)
+
     def start(self):
         log('Start.')
+        self._interface.handle_start()
         # Start timers
         for t in self._timers.values():
             t.start()
@@ -179,21 +217,26 @@ class Router(object):
             t.stop()
         self._interface.handle_close()
 
+    def transmit(self, packet, link):
+        self._interface.transmit(packet, link)
+
     def handle_packet(self, packet):
-        if packet.link in self._links:
+        if isinstance(packet, ospf.AdminPacket):
+            self._handle_admin(packet)
+        elif packet.link in self._links:
             if isinstance(packet, ospf.HelloPacket):
                 self._handle_hello(packet)
             elif isinstance(packet, ospf.LinkStatePacket):
                 self._handle_lsa(packet)
 
     def add_link(self, link, cost, capacity):
-        log("Added link %s." % (link,))
         if link not in self._links:
+            log("Added link %s." % (link,))
             self._links[link] = (cost, capacity)
 
     def remove_link(self, link):
-        log("Removed link %s." % (link,))
         if link in self._links:
+            log("Removed link %s." % (link,))
             del self._links[link]
 
     def update_demand(self, demand):
@@ -202,8 +245,16 @@ class Router(object):
             self._lsdb[self._hostname].demand = demand
             self._advertise()
 
-    def generate_breakdown(self):
+    def reset_router(self, filename, hostname, demand):
         self.stop()
+        if filename is not None:
+            self.init_router(filename)
+        elif hostname is None:
+            self.init_router(self._hostname, self._demand)
+        else:
+            demand = demand if demand is not None else 0
+            self.init_router(hostname, demand)
+        self.start()
 
-    # TODO: Dynamic link insertion/removal, breakdowns generating and/or demand change from console/Galileo
-    # Probably some second thread in main that listens for input from console/Galileo. Appropriate router methods above.
+        # TODO: Dynamic link insertion/removal, breakdowns generating and/or demand change from console/Galileo
+        # Probably some second thread in main that listens for input from console/Galileo. Appropriate router methods above.

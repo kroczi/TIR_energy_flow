@@ -58,6 +58,25 @@ class HelloPacket(object):
         self.seen = seen
 
 
+class AdminPacket(object):
+    ADD_LINK = 0
+    REMOVE_LINK = 1
+    UPDATE_DEMAND = 2
+    GENERATE_BREAKDOWN = 3
+    RESET_ROUTER = 4
+
+    def __init__(self, action, router_id=None, another_router_id=None,
+                 link=None, cost=None, capacity=None, demand=None, filename=None):
+        self.action = action
+        self.router_id = router_id
+        self.another_router_id = another_router_id
+        self.link = link
+        self.cost = cost
+        self.capacity = capacity
+        self.demand = demand
+        self.filename = filename
+
+
 class Database(dict):
     def __init__(self):
         dict.__init__(self)

@@ -19,46 +19,35 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-import ConfigParser
 import signal
 import sys
 from PyQt4 import QtCore, QtGui
 
 import interface
 import router
+from generator import EventGenerator, InputThread
 
 
 def main():
-    app = QtGui.QApplication(sys.argv)
-
-    if len(sys.argv) != 2:
+    if len(sys.argv) < 2:
+        print('You must pass path to the config file or hostname [with demand].')
         sys.exit(1)
 
-    configfile = sys.argv[1]
-    cfg = ConfigParser.SafeConfigParser()
-    try:
-        cfg.read(str(configfile))
-    except ConfigParser.MissingSectionHeaderError:
-        print('MissingSectionHeaderError')
-        sys.exit(app.quit())
+    app = QtGui.QApplication(sys.argv)
 
-    hostname = cfg.get('Router', 'hostname')
-    demand = int(cfg.get('Router', 'demand'))
-    rrouter = router.Router(hostname, demand)
-
-    links = [i for i in cfg.sections() if i.startswith('Link')]
-    for link in links:
-        link_id = cfg.get(link, 'link')
-        cost = int(cfg.get(link, 'cost'))
-        capacity = int(cfg.get(link, 'capacity'))
-        rrouter.add_link(link_id, cost, capacity)
+    demand = int(sys.argv[2]) if len(sys.argv) > 2 else 0
+    rrouter = router.Router()
+    rrouter.init_router(sys.argv[1], demand)
 
     router_timer = QtCore.QTimer()
     QtCore.QObject.connect(router_timer, QtCore.SIGNAL('timeout()'), interface.poll)
     router_timer.start(500)
-    rrouter.start()
     signal.signal(signal.SIGTERM, lambda s, f: app.exit())
     signal.signal(signal.SIGINT, lambda s, f: app.exit())
+
+    rrouter.start()
+    InputThread(EventGenerator(rrouter)).start()
+
     sys.exit(app.exec_())
 
 

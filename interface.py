@@ -8,12 +8,12 @@ try:
 except ImportError:
     import pickle
 
-
-poll = asyncore.poll
-_terminator = '\0E\0O\0F\0'
 MCAST_GRP = '236.0.0.0'
 MCAST_PORT = 3456
 
+_terminator = '\0E\0O\0F\0'
+
+poll = asyncore.poll
 
 def log(msg):
     print 'log:', msg
@@ -29,16 +29,21 @@ class Interface(asyncore.dispatcher):
         self.connections = {}
         self.tx = IfaceTx(self.connections)
         self.rx = IfaceRx(self.router, self.connections)
-        log('%s up' % (self.router,))
+        log('%s up' % (self.router._hostname,))
 
     @staticmethod
     def writable(self):
         return False
 
+    def handle_start(self):
+        self.tx.handle_start()
+        self.rx.handle_start()
+
     def handle_close(self):
-        self.close()
         for conn in self.connections.values():
             conn.handle_close()
+        self.tx.handle_close()
+        self.rx.handle_close()
 
     def transmit(self, packet, link):
         """Transmit a packet through the interface"""
@@ -56,7 +61,6 @@ class IfaceTx(asynchat.async_chat):
         self.set_socket(self.get_socket())
         self.add_channel(connections)
         self.connections = connections
-        self.connected = True
 
     def readable(self):
         return False
@@ -83,6 +87,9 @@ class IfaceTx(asynchat.async_chat):
     def handle_error(self):
         self.handle_close()
 
+    def handle_start(self):
+        self.connected = True
+
     def handle_close(self):
         if self._fileno in self.connections:
             del self.connections[self._fileno]
@@ -102,7 +109,6 @@ class IfaceRx(asynchat.async_chat):
         self.router = router
         self.connections = connections
         self.buffer = []
-        self.connected = True
 
     @staticmethod
     def get_socket():
@@ -122,6 +128,12 @@ class IfaceRx(asynchat.async_chat):
         # Deserialize packet
         packet = pickle.loads(data)
         self.router.handle_packet(packet)
+
+    def handle_error(self):
+        self.handle_close()
+
+    def handle_start(self):
+        self.connected = True
 
     def handle_close(self):
         if self._fileno in self.connections:
