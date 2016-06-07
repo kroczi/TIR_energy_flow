@@ -144,10 +144,6 @@ class Database(dict):
                 g.add_edge(lsa.adv_router, neighbor_id, weight=cost, capacity=capacity)
                 g.add_edge(neighbor_id, lsa.adv_router, weight=cost, capacity=capacity)
 
-        pos = nx.layout.fruchterman_reingold_layout(g)
-        nx.draw(g, pos)
-        plt.show()
-
         flow_cost = 0
         flow_dict = {}
         try:
@@ -165,5 +161,15 @@ class Database(dict):
         for node in flow_dict.values():
             if 'equalizer' in node:
                 del node['equalizer']
+
+        graph = nx.DiGraph()
+        for key in flow_dict:
+            for key2 in flow_dict[key]:
+                if flow_dict[key][key2] > 0:
+                    graph.add_edge(key, key2)
+
+        pos = nx.spring_layout(graph)
+        nx.draw(graph, pos)
+        plt.show()
 
         return flow_cost, flow_dict
