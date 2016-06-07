@@ -77,6 +77,7 @@ class Router(object):
         log(flow_dict[self._hostname])
 
         # TODO: Display flow in console / on Galileo
+        # TODO: Handle consumer doesn't get sufficient energy.
 
     def _break_adjacency(self, neighbor_id):
         log('Break adjacency.')
@@ -204,5 +205,5 @@ class Router(object):
     def generate_breakdown(self):
         self.stop()
 
-    # TODO: Dynamic link insertion/removal, breakdowns generating or demand change from console/Galileo
+    # TODO: Dynamic link insertion/removal, breakdowns generating and/or demand change from console/Galileo
     # Probably some second thread in main that listens for input from console/Galileo. Appropriate router methods above.

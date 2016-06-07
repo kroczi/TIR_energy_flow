@@ -124,7 +124,14 @@ class Database(dict):
                 g.add_edge(lsa.adv_router, neighbor_id, weight=cost, capacity=capacity)
                 g.add_edge(neighbor_id, lsa.adv_router, weight=cost, capacity=capacity)
 
-        flow_cost, flow_dict = nx.network_simplex(g)
+        flow_cost = 0
+        flow_dict = {}
+        try:
+            flow_cost, flow_dict = nx.network_simplex(g)
+        except nx.NetworkXUnfeasible as e:
+            pass  # TODO: Handle no flow satisfying all demand (the equalized one).
+        except (nx.NetworkXError, nx.NetworkXUnbounded) as e:
+            pass  # TODO: Handle not connected graph or a cycle of negative cost and infinite capacity.
 
         flow_cost -= abs(production-consumption)*100
 
@@ -136,6 +143,3 @@ class Database(dict):
                 del node['equalizer']
 
         return flow_cost, flow_dict
-
-        # TODO: ALSO: NetworkXError
-        # Not so important can be handled with single error alert.

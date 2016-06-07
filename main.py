@@ -64,3 +64,5 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+# TODO: Prepare presentation graph with node configurations, breakdown and graph elements addition scenarios.
