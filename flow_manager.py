@@ -1,9 +1,9 @@
 import networkx as nx
+
 import matplotlib.pyplot as plt
 
 
 class FlowManager(object):
-
     @staticmethod
     def calculate_flow(lsdb):
         production = 0
@@ -21,12 +21,12 @@ class FlowManager(object):
                 production -= demand
 
         if production > consumption:
-            g.add_node(equalizer, demand=production-consumption)
+            g.add_node(equalizer, demand=production - consumption)
             for node, demand in lsdb.demands.iteritems():
                 if demand < 0:
                     g.add_edge(node, equalizer, weight=equalizer_cost)
         elif consumption > production:
-            g.add_node(equalizer, demand=production-consumption)
+            g.add_node(equalizer, demand=production - consumption)
             for node, demand in lsdb.demands.iteritems():
                 if demand > 0:
                     g.add_edge(equalizer, node, weight=equalizer_cost)
@@ -46,7 +46,7 @@ class FlowManager(object):
         except (nx.NetworkXError, nx.NetworkXUnbounded) as e:
             pass  # TODO: Handle not connected graph or a cycle of negative cost and infinite capacity.
 
-        flow_cost -= abs(production-consumption)*equalizer_cost
+        flow_cost -= abs(production - consumption) * equalizer_cost
 
         if equalizer in flow_dict:
             del flow_dict[equalizer]

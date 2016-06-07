@@ -1,10 +1,11 @@
 import ConfigParser
 import sys
 
-from timer import Timer
+import ospf
 from flow_manager import FlowManager
 from interface import Interface
-import ospf
+from timer import Timer
+
 
 def log(msg):
     print 'log:', msg

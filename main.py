@@ -23,13 +23,13 @@ import sys
 
 import interface
 import router
-from timer import Timer
 from generator import EventGenerator, InputThread
+from timer import Timer
+
 
 def main():
-
     if len(sys.argv) < 2:
-        print('Wrong number of arguments. Usage: <nodeId> [<demand>]')
+        print('You must pass path to the config file or hostname [with demand].')
         sys.exit(1)
 
     demand = int(sys.argv[2]) if len(sys.argv) > 2 else 0
@@ -41,6 +41,7 @@ def main():
     rrouter.start()
 
     InputThread(EventGenerator(rrouter)).start()
+
 
 if __name__ == '__main__':
     main()

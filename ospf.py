@@ -77,7 +77,7 @@ class AdminPacket(object):
 
 class Database(dict):
     def __init__(self):
-        dict.__init__(self)
+        super(Database, self).__init__()
         self.demands = {}
 
     def insert(self, lsa):
