@@ -19,37 +19,41 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-import signal
+import ConfigParser
 import sys
-from PyQt4 import QtCore, QtGui
 
 import interface
 import router
+from timer import Timer
 from generator import EventGenerator, InputThread
 
-
 def main():
+
     if len(sys.argv) < 2:
         print('You must pass path to the config file or hostname [with demand].')
         sys.exit(1)
 
-    app = QtGui.QApplication(sys.argv)
+    configfile = sys.argv[1]
+    cfg = ConfigParser.SafeConfigParser()
+    try:
+        cfg.read(str(configfile))
+    except ConfigParser.MissingSectionHeaderError:
+        print('MissingSectionHeaderError')
+        sys.exit(1)
+
+    hostname = cfg.get('Router', 'hostname')
+    demand = int(cfg.get('Router', 'demand'))
+    rrouter = router.Router(hostname, demand)
 
     demand = int(sys.argv[2]) if len(sys.argv) > 2 else 0
     rrouter = router.Router()
     rrouter.init_router(sys.argv[1], demand)
 
-    router_timer = QtCore.QTimer()
-    QtCore.QObject.connect(router_timer, QtCore.SIGNAL('timeout()'), interface.poll)
-    router_timer.start(500)
-    signal.signal(signal.SIGTERM, lambda s, f: app.exit())
-    signal.signal(signal.SIGINT, lambda s, f: app.exit())
-
+    router_timer = Timer(1, interface.poll)
+    router_timer.start()
     rrouter.start()
+
     InputThread(EventGenerator(rrouter)).start()
-
-    sys.exit(app.exec_())
-
 
 if __name__ == '__main__':
     main()

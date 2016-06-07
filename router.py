@@ -1,25 +1,10 @@
 import ConfigParser
-from PyQt4 import QtCore
-
 import sys
 
+from timer import Timer
 from flow_manager import FlowManager
 from interface import Interface
 import ospf
-
-
-def mktimer(interval, callback, args=(), single_shot=False):
-    t = QtCore.QTimer()
-    t.setInterval(1000 * interval)
-    if args:
-        def timeout():
-            callback(*args)
-    else:
-        timeout = callback
-    t.setSingleShot(single_shot)
-    QtCore.QObject.connect(t, QtCore.SIGNAL('timeout()'), timeout)
-    return t
-
 
 def log(msg):
     print 'log:', msg
@@ -67,9 +52,9 @@ class Router(object):
     def _init_timers(self):
         log('Init timers.')
         self._dead_timer = None
-        self._timers = {'lsdb': mktimer(ospf.AGE_INTERVAL, self._update_lsdb),
-                        'refresh_lsa': mktimer(ospf.LS_REFRESH_TIME, self._refresh_lsa),
-                        'hello': mktimer(ospf.HELLO_INTERVAL, self._hello)}
+        self._timers = {'lsdb': Timer(ospf.AGE_INTERVAL, self._update_lsdb),
+                        'refresh_lsa': Timer(ospf.LS_REFRESH_TIME, self._refresh_lsa),
+                        'hello': Timer(ospf.HELLO_INTERVAL, self._hello)}
 
     def _update_lsdb(self):
         log('LSDB update.')
@@ -169,7 +154,7 @@ class Router(object):
             # Reset Dead timer
             if neighbor_id in self._timers:
                 self._timers[neighbor_id].stop()
-            t = mktimer(ospf.DEAD_INTERVAL, self._break_adjacency, (neighbor_id,), True)
+            t = Timer(ospf.DEAD_INTERVAL, self._break_adjacency, [neighbor_id], True)
             t.start()
             self._timers[neighbor_id] = t
 
