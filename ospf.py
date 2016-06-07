@@ -20,6 +20,7 @@
 # THE SOFTWARE.
 
 import networkx as nx
+import matplotlib.pyplot as plt
 
 TIME_SCALE = 20  # 1 minute (60 seconds) is to 3 seconds (60 / 3 = 20)
 
@@ -123,6 +124,10 @@ class Database(dict):
                 neighbor_id, link, cost, capacity = data
                 g.add_edge(lsa.adv_router, neighbor_id, weight=cost, capacity=capacity)
                 g.add_edge(neighbor_id, lsa.adv_router, weight=cost, capacity=capacity)
+
+        pos = nx.layout.fruchterman_reingold_layout(g)
+        nx.draw(g, pos)
+        plt.show()
 
         flow_cost = 0
         flow_dict = {}
