@@ -31,7 +31,8 @@ import router
 def main():
     app = QtGui.QApplication(sys.argv)
 
-    if len(sys.argv) != 2:
+    if len(sys.argv) < 2:
+        print('You must pass path to the config file')
         sys.exit(1)
 
     configfile = sys.argv[1]
