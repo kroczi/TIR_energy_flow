@@ -19,7 +19,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-import ConfigParser
 import sys
 
 import interface
@@ -30,20 +29,8 @@ from generator import EventGenerator, InputThread
 def main():
 
     if len(sys.argv) < 2:
-        print('You must pass path to the config file or hostname [with demand].')
+        print('Wrong number of arguments. Usage: <nodeId> [<demand>]')
         sys.exit(1)
-
-    configfile = sys.argv[1]
-    cfg = ConfigParser.SafeConfigParser()
-    try:
-        cfg.read(str(configfile))
-    except ConfigParser.MissingSectionHeaderError:
-        print('MissingSectionHeaderError')
-        sys.exit(1)
-
-    hostname = cfg.get('Router', 'hostname')
-    demand = int(cfg.get('Router', 'demand'))
-    rrouter = router.Router(hostname, demand)
 
     demand = int(sys.argv[2]) if len(sys.argv) > 2 else 0
     rrouter = router.Router()
