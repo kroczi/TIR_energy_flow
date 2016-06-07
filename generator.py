@@ -27,6 +27,9 @@ class EventGenerator(object):
                                           another_router_id=another_router_id, demand=demand,
                                           filename=filename), None)
 
+    def show_graph(self):
+        self._router.show_graph()
+
 
 class InputThread(threading.Thread):
     def __init__(self, generator):
@@ -36,9 +39,7 @@ class InputThread(threading.Thread):
 
     def run(self):
         while True:
-            value = raw_input()
-            print(value)
-            value = value.split()
+            value = raw_input().split()
 
             if len(value) < 1:
                 continue
@@ -67,3 +68,6 @@ class InputThread(threading.Thread):
                     self._generator.reset_router(value[1], another_router_id=value[2])
                 elif len(value) == 4:
                     self._generator.reset_router(value[1], another_router_id=value[2], demand=int(value[3]))
+
+            elif value[0] == "sg":
+                self._generator.show_graph()

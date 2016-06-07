@@ -19,9 +19,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-import networkx as nx
-import matplotlib.pyplot as plt
-
 TIME_SCALE = 20  # 1 minute (60 seconds) is to 3 seconds (60 / 3 = 20)
 
 
@@ -113,63 +110,3 @@ class Database(dict):
         for adv_router in self:
             self[adv_router].age += 1
         return self.flush()
-
-    def get_flow(self):
-        """Return a list of shortest paths from router_id to all other nodes"""
-        g = nx.DiGraph()
-        production = 0
-        consumption = 0
-
-        for node, demand in self.demands.iteritems():
-            g.add_node(node, demand=demand)
-            if demand > 0:
-                consumption += demand
-            else:
-                production -= demand
-
-        if production > consumption:
-            g.add_node('equalizer', demand=production-consumption)
-            for node, demand in self.demands.iteritems():
-                if demand < 0:
-                    g.add_edge(node, 'equalizer', weight=100)
-        elif consumption > production:
-            g.add_node('equalizer', demand=production-consumption)
-            for node, demand in self.demands.iteritems():
-                if demand > 0:
-                    g.add_edge('equalizer', node, weight=100)
-
-        for lsa in self.values():
-            for data in lsa.networks.values():
-                neighbor_id, link, cost, capacity = data
-                g.add_edge(lsa.adv_router, neighbor_id, weight=cost, capacity=capacity)
-                g.add_edge(neighbor_id, lsa.adv_router, weight=cost, capacity=capacity)
-
-        flow_cost = 0
-        flow_dict = {}
-        try:
-            flow_cost, flow_dict = nx.network_simplex(g)
-        except nx.NetworkXUnfeasible as e:
-            pass  # TODO: Handle no flow satisfying all demand (the equalized one).
-        except (nx.NetworkXError, nx.NetworkXUnbounded) as e:
-            pass  # TODO: Handle not connected graph or a cycle of negative cost and infinite capacity.
-
-        flow_cost -= abs(production-consumption)*100
-
-        if 'equalizer' in flow_dict:
-            del flow_dict['equalizer']
-
-        for node in flow_dict.values():
-            if 'equalizer' in node:
-                del node['equalizer']
-
-        graph = nx.DiGraph()
-        for key in flow_dict:
-            for key2 in flow_dict[key]:
-                if flow_dict[key][key2] > 0:
-                    graph.add_edge(key, key2)
-
-        pos = nx.spring_layout(graph)
-        nx.draw(graph, pos)
-        plt.show()
-
-        return flow_cost, flow_dict
