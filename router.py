@@ -3,6 +3,7 @@ from PyQt4 import QtCore
 
 import sys
 
+from flow_manager import FlowManager
 from interface import Interface
 import ospf
 
@@ -93,12 +94,14 @@ class Router(object):
 
     def _update_energy_flow(self):
         log('Recalculating flow.')
-        flow_cost, flow_dict = self._lsdb.get_flow()
-        self._energy_flow = flow_dict[self._hostname]
+        flow_cost, flow_dict = FlowManager.calculate_flow(self._lsdb)
+        self._energy_flow = flow_dict
         log(flow_dict[self._hostname])
 
-        # TODO: Display flow in console / on Galileo
         # TODO: Handle consumer doesn't get sufficient energy.
+
+    def show_graph(self):
+        FlowManager.present_flow(self._energy_flow)
 
     def _break_adjacency(self, neighbor_id):
         log('Break adjacency.')
