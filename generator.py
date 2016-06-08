@@ -28,16 +28,14 @@ class EventGenerator(object):
                                           another_router_id=another_router_id, demand=demand,
                                           filename=filename), None)
 
-    def show_graph(self):
-        self._router.show_graph()
-
     def stop_simulation(self):
         self._router.stop()
 
 
 class InputThread(threading.Thread):
-    def __init__(self, generator):
+    def __init__(self, generator, plotter=None):
         super(InputThread, self).__init__()
+        self._plotter = plotter
         self._generator = generator
 
     def run(self):
@@ -73,7 +71,7 @@ class InputThread(threading.Thread):
                 elif len(value) == 4:
                     self._generator.reset_router(value[1], another_router_id=value[2], demand=int(value[3]))
 
-            elif value[0] == "sg":
-                self._generator.show_graph()
+            elif self._plotter is not None and value[0] == "sg":
+                self._plotter.present_flow()
 
         thread.interrupt_main()

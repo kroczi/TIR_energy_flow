@@ -1,8 +1,5 @@
 import networkx as nx
 
-import matplotlib.pyplot as plt
-
-
 class FlowManager(object):
     @staticmethod
     def calculate_flow(lsdb):
@@ -57,14 +54,3 @@ class FlowManager(object):
 
         return flow_cost, flow_dict
 
-    @staticmethod
-    def present_flow(flow_dict):
-        graph = nx.DiGraph()
-        for key in flow_dict:
-            for key2 in flow_dict[key]:
-                if flow_dict[key][key2] > 0:
-                    graph.add_edge(key, key2)
-
-        pos = nx.spring_layout(graph)
-        nx.draw(graph, pos)
-        plt.show()
