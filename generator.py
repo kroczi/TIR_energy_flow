@@ -41,38 +41,42 @@ class InputThread(threading.Thread):
 
     def run(self):
         while True:
-            value = raw_input().split()
+            try:
+                value = raw_input().split()
 
-            if len(value) < 1:
-                continue
-            elif value[0] == "q":
-                self._generator.stop_simulation()
-                break
-            elif value[0] == "al":
-                if len(value) != 6:
+                if len(value) < 1:
                     continue
-                self._generator.add_link(value[1], value[2], value[3], int(value[4]), int(value[5]))
-            elif value[0] == "rl":
-                if len(value) != 2:
-                    continue
-                self._generator.remove_link(value[1])
-            elif value[0] == "ud":
-                if len(value) != 3:
-                    continue
-                self._generator.update_demand(value[1], int(value[2]))
-            elif value[0] == "gb":
-                if len(value) != 2:
-                    continue
-                self._generator.generate_breakdown(value[1])
-            elif value[0] == "rr":
-                if len(value) == 3 and value[2].endswith(".cfg"):
-                    self._generator.reset_router(value[1], filename=value[2])
-                elif len(value) == 3:
-                    self._generator.reset_router(value[1], another_router_id=value[2])
-                elif len(value) == 4:
-                    self._generator.reset_router(value[1], another_router_id=value[2], demand=int(value[3]))
+                elif value[0] == "q":
+                    self._generator.stop_simulation()
+                    break
+                elif value[0] == "al":
+                    if len(value) != 6:
+                        continue
+                    self._generator.add_link(value[1], value[2], value[3], int(value[4]), int(value[5]))
+                elif value[0] == "rl":
+                    if len(value) != 2:
+                        continue
+                    self._generator.remove_link(value[1])
+                elif value[0] == "ud":
+                    if len(value) != 3:
+                        continue
+                    self._generator.update_demand(value[1], int(value[2]))
+                elif value[0] == "gb":
+                    if len(value) != 2:
+                        continue
+                    self._generator.generate_breakdown(value[1])
+                elif value[0] == "rr":
+                    if len(value) == 3 and value[2].endswith(".cfg"):
+                        self._generator.reset_router(value[1], filename=value[2])
+                    elif len(value) == 3:
+                        self._generator.reset_router(value[1], another_router_id=value[2])
+                    elif len(value) == 4:
+                        self._generator.reset_router(value[1], another_router_id=value[2], demand=int(value[3]))
 
-            elif value[0] == "sg":
-                self._plotter.present_flow()
+                elif value[0] == "sg":
+                    self._plotter.present_flow()
+
+            except EOFError:
+                pass
 
         thread.interrupt_main()

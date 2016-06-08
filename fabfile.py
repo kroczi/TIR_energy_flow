@@ -16,7 +16,7 @@ def install():
 
 def execute(node_id):
     global location, cmd
-    run('nohup {0} >& /tmp/smartgrid.log < /dev/null &'.format(cmd.format(location, node_id)), pty=False)
+    run('nohup {0} > /tmp/smartgrid.log 2>&1 < /dev/null &'.format(cmd.format(location, node_id)), pty=False)
 
 def setup_all():
     prerequisties()

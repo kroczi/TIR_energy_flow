@@ -10,6 +10,7 @@ from timer import Timer
 
 def log(msg):
     print 'log:', msg
+    sys.stdout.flush()
 
 
 def disable_log():
