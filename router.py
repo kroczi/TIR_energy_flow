@@ -1,6 +1,7 @@
 import ConfigParser
 import sys
 
+import interface
 import ospf
 from flow_manager import FlowManager
 from interface import Interface
@@ -9,6 +10,14 @@ from timer import Timer
 
 def log(msg):
     print 'log:', msg
+
+
+def disable_log():
+    def no_log(msg):
+        pass
+
+    sys.modules[__name__].log = no_log
+    interface.log = no_log
 
 
 class Router(object):
@@ -31,7 +40,7 @@ class Router(object):
         if not name.endswith(".cfg"):
             self.__init__(name, demand)
             return
-        print(name)
+
         cfg = ConfigParser.SafeConfigParser()
         try:
             cfg.read(str(name))
@@ -83,8 +92,6 @@ class Router(object):
         flow_cost, flow_dict = FlowManager.calculate_flow(self._lsdb)
         self._energy_flow = flow_dict
         log(flow_dict[self._hostname])
-
-        # TODO: Handle consumer doesn't get sufficient energy.
 
     def get_energy_flow(self):
         return self._energy_flow
@@ -244,6 +251,3 @@ class Router(object):
             demand = demand if demand is not None else 0
             self.init_router(hostname, demand)
         self.start()
-
-        # TODO: Dynamic link insertion/removal, breakdowns generating and/or demand change from console/Galileo
-        # Probably some second thread in main that listens for input from console/Galileo. Appropriate router methods above.

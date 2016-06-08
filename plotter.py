@@ -1,5 +1,7 @@
 import networkx as nx
+
 import matplotlib.pyplot as plt
+
 
 class Plotter():
     def __init__(self, router):
@@ -7,7 +9,7 @@ class Plotter():
 
     def present_flow(self):
         ef = self._router.get_energy_flow()
-        if(ef is not None):
+        if ef is not None:
             Plotter._present_flow(ef)
 
     @staticmethod

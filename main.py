@@ -29,6 +29,9 @@ from timer import Timer
 def main():
     args = parse_args()
 
+    if not args.logs:
+        router.disable_log()
+
     rrouter = router.Router()
     rrouter.init_router(args.confOrName, args.demand)
 
@@ -36,7 +39,7 @@ def main():
     router_timer.start()
     rrouter.start()
 
-    if(args.interactive):
+    if args.interactive:
         from generator import InputThread
         InputThread(rrouter).start()
 
@@ -50,10 +53,10 @@ def parse_args():
 
     parser.add_argument('-d', '--demand', type=int, dest='demand', default=0)
     parser.add_argument('-I', dest='interactive', action='store_false', default=True)
+    parser.add_argument('-L', dest='logs', action='store_false', default=True)
 
     return parser.parse_args()
 
+
 if __name__ == '__main__':
     main()
-
-# TODO: Prepare presentation graph with node configurations, breakdown and graph elements addition scenarios.

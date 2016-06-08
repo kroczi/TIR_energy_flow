@@ -1,8 +1,8 @@
 import networkx as nx
 
-import matplotlib.pyplot as plt
-import matplotlib.colors as col
 import matplotlib.cm as cmx
+import matplotlib.colors as col
+import matplotlib.pyplot as plt
 
 
 class FlowManager(object):
@@ -43,12 +43,9 @@ class FlowManager(object):
         flow_dict = {}
         try:
             flow_cost, flow_dict = nx.network_simplex(g)
-        except nx.NetworkXUnfeasible as e:
-            pass  # TODO: Handle no flow satisfying all demand (the equalized one).
-        except (nx.NetworkXError, nx.NetworkXUnbounded) as e:
-            pass  # TODO: Handle not connected graph or a cycle of negative cost and infinite capacity.
-
-        flow_cost -= abs(production - consumption) * equalizer_cost
+            flow_cost -= abs(production - consumption) * equalizer_cost
+        except Exception as e:
+            print(e)
 
         if equalizer in flow_dict:
             del flow_dict[equalizer]
