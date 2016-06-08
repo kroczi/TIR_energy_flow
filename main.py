@@ -23,7 +23,6 @@ import argparse
 
 import interface
 import router
-from generator import EventGenerator, InputThread
 from timer import Timer
 
 
@@ -38,8 +37,8 @@ def main():
     rrouter.start()
 
     if(args.interactive):
-        from plotter import Plotter
-        InputThread(EventGenerator(rrouter), Plotter(rrouter)).start()
+        from generator import InputThread
+        InputThread(rrouter).start()
 
 
 def parse_args():
