@@ -1,8 +1,9 @@
+import asynchat
 import asyncore
 import socket
-import asynchat
-from errno import EWOULDBLOCK
 import struct
+from errno import EWOULDBLOCK
+
 try:
     import cPickle as pickle
 except ImportError:
@@ -14,6 +15,7 @@ MCAST_PORT = 3456
 _terminator = '\0E\0O\0F\0'
 
 poll = asyncore.poll
+
 
 def log(msg):
     print 'log:', msg

@@ -1,23 +1,10 @@
 import ConfigParser
-from PyQt4 import QtCore
-
 import sys
 
-from interface import Interface
 import ospf
-
-
-def mktimer(interval, callback, args=(), single_shot=False):
-    t = QtCore.QTimer()
-    t.setInterval(1000 * interval)
-    if args:
-        def timeout():
-            callback(*args)
-    else:
-        timeout = callback
-    t.setSingleShot(single_shot)
-    QtCore.QObject.connect(t, QtCore.SIGNAL('timeout()'), timeout)
-    return t
+from flow_manager import FlowManager
+from interface import Interface
+from timer import Timer
 
 
 def log(msg):
@@ -25,51 +12,50 @@ def log(msg):
 
 
 class Router(object):
-    def __init__(self, on_graph_recalculated=None):
-        self._hostname = None
-        self._demand = None
-        self._lsdb = ospf.Database()
-        self._links = {}
-        self._neighbors = {}
-        self._seen = {}
-        self._energy_flow = {}
-        self._init_timers()
-        self._interface = Interface(self)
-        self._on_graph_recalculated = on_graph_recalculated
+    def __init__(self, hostname=None, demand=None):
+        if hostname is not None:
+            self._hostname = hostname
+            self._demand = demand
+            self._lsdb = ospf.Database()
+            self._links = {}
+            self._neighbors = {}
+            self._seen = {}
+            self._energy_flow = {}
+            self._init_timers()
+            self._interface = Interface(self)
 
     def __del__(self):
         self.stop()
 
-    def configure(self, nameOrHostname, demand=0):
-        if not nameOrHostname.endswith(".cfg"):
-            self._hostname = nameOrHostname
-            self._demand = demand
-        else:
-            cfg = ConfigParser.SafeConfigParser()
-            try:
-                cfg.read(str(nameOrHostname))
-            except ConfigParser.MissingSectionHeaderError:
-                print('MissingSectionHeaderError')
-                sys.exit(-1)
+    def init_router(self, name, demand=0):
+        if not name.endswith(".cfg"):
+            self.__init__(name, demand)
+            return
+        print(name)
+        cfg = ConfigParser.SafeConfigParser()
+        try:
+            cfg.read(str(name))
+        except ConfigParser.MissingSectionHeaderError:
+            print('MissingSectionHeaderError')
+            sys.exit(-1)
 
-            self._hostname = cfg.get('Router', 'hostname')
-            self._demand = int(cfg.get('Router', 'demand'))
+        hostname = cfg.get('Router', 'hostname')
+        demand = int(cfg.get('Router', 'demand'))
+        self.__init__(hostname, demand)
 
-            links = [i for i in cfg.sections() if i.startswith('Link')]
-            for link in links:
-                link_id = cfg.get(link, 'link')
-                cost = int(cfg.get(link, 'cost'))
-                capacity = int(cfg.get(link, 'capacity'))
-                self.add_link(link_id, cost, capacity)
-
-        print(self._hostname)
+        links = [i for i in cfg.sections() if i.startswith('Link')]
+        for link in links:
+            link_id = cfg.get(link, 'link')
+            cost = int(cfg.get(link, 'cost'))
+            capacity = int(cfg.get(link, 'capacity'))
+            self.add_link(link_id, cost, capacity)
 
     def _init_timers(self):
         log('Init timers.')
         self._dead_timer = None
-        self._timers = {'lsdb': mktimer(ospf.AGE_INTERVAL, self._update_lsdb),
-                        'refresh_lsa': mktimer(ospf.LS_REFRESH_TIME, self._refresh_lsa),
-                        'hello': mktimer(ospf.HELLO_INTERVAL, self._hello)}
+        self._timers = {'lsdb': Timer(ospf.AGE_INTERVAL, self._update_lsdb),
+                        'refresh_lsa': Timer(ospf.LS_REFRESH_TIME, self._refresh_lsa),
+                        'hello': Timer(ospf.HELLO_INTERVAL, self._hello)}
 
     def _update_lsdb(self):
         log('LSDB update.')
@@ -94,17 +80,12 @@ class Router(object):
 
     def _update_energy_flow(self):
         log('Recalculating flow.')
-        flow_cost, flow_dict = self._lsdb.get_flow()
-        self._energy_flow = flow_dict[self._hostname]
+        flow_cost, flow_dict = FlowManager.calculate_flow(self._lsdb)
+        self._energy_flow = flow_dict
         log(flow_dict[self._hostname])
 
-        if(flow_dict is not None and self._on_graph_recalculated is not None):
-            # share it with the world if anyone wants it
-            shareable_copy = flow_dict.copy()
-            self._on_graph_recalculated(shareable_copy)
-
-        # TODO: Display flow in console / on Galileo
-        # TODO: Handle consumer doesn't get sufficient energy.
+    def show_graph(self):
+        FlowManager.present_flow(self._energy_flow, self._lsdb)
 
     def _break_adjacency(self, neighbor_id):
         log('Break adjacency.')
@@ -172,7 +153,7 @@ class Router(object):
             # Reset Dead timer
             if neighbor_id in self._timers:
                 self._timers[neighbor_id].stop()
-            t = mktimer(ospf.DEAD_INTERVAL, self._break_adjacency, (neighbor_id,), True)
+            t = Timer(ospf.DEAD_INTERVAL, self._break_adjacency, [neighbor_id], True)
             t.start()
             self._timers[neighbor_id] = t
 
@@ -254,13 +235,11 @@ class Router(object):
     def reset_router(self, filename, hostname, demand):
         self.stop()
         if filename is not None:
-            self.configure(filename)
+            self.init_router(filename)
         elif hostname is None:
-            self.configure(self._hostname, self._demand)
+            self.init_router(self._hostname, self._demand)
         else:
             demand = demand if demand is not None else 0
-            self.configure(hostname, demand)
+            self.init_router(hostname, demand)
         self.start()
-
-        # TODO: Dynamic link insertion/removal, breakdowns generating and/or demand change from console/Galileo
         # Probably some second thread in main that listens for input from console/Galileo. Appropriate router methods above.

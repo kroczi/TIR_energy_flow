@@ -19,14 +19,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-import signal
 import sys
-from PyQt4 import QtCore, QtGui
 
 import interface
 import router
 from generator import EventGenerator, InputThread
-from plotter import Plotter
+from timer import Timer
 
 
 def main():
@@ -34,24 +32,15 @@ def main():
         print('You must pass path to the config file or hostname [with demand].')
         sys.exit(1)
 
-    app = QtGui.QApplication(sys.argv)
-
-    plotter = Plotter()
     demand = int(sys.argv[2]) if len(sys.argv) > 2 else 0
-    rrouter = router.Router(on_graph_recalculated=lambda g: plotter.updateGraph(g))
-    rrouter.configure(sys.argv[1], demand)
+    rrouter = router.Router()
+    rrouter.init_router(sys.argv[1], demand)
 
-    router_timer = QtCore.QTimer()
-    QtCore.QObject.connect(router_timer, QtCore.SIGNAL('timeout()'), interface.poll)
-    router_timer.start(500)
-    signal.signal(signal.SIGTERM, lambda s, f: app.exit())
-    signal.signal(signal.SIGINT, lambda s, f: app.exit())
-
+    router_timer = Timer(1, interface.poll)
+    router_timer.start()
     rrouter.start()
-    plotter.start()
-    InputThread(EventGenerator(rrouter)).start()
 
-    sys.exit(app.exec_())
+    InputThread(EventGenerator(rrouter)).start()
 
 
 if __name__ == '__main__':

@@ -20,7 +20,6 @@
 # THE SOFTWARE.
 
 import networkx as nx
-import pylab
 
 TIME_SCALE = 20  # 1 minute (60 seconds) is to 3 seconds (60 / 3 = 20)
 
@@ -79,7 +78,7 @@ class AdminPacket(object):
 
 class Database(dict):
     def __init__(self):
-        dict.__init__(self)
+        super(Database, self).__init__()
         self.demands = {}
 
     def insert(self, lsa):
@@ -160,37 +159,5 @@ class Database(dict):
         for node in flow_dict.values():
             if 'equalizer' in node:
                 del node['equalizer']
-
-        prodUsed = []
-        prodNotFullyUsed = []
-        demandZero = []
-        consFull = []
-        consNotFull = []
-        graph = nx.DiGraph()
-        for key in flow_dict:
-            for key2 in flow_dict[key]:
-                if flow_dict[key][key2] > 0:
-                    graph.add_edges_from([(key, key2)], weight=flow_dict[key][key2])
-
-        print graph.nodes()
-        print graph
-        print flow_dict
-
-        pos = nx.spring_layout(graph)
-        for i in graph.nodes():
-            energy = 0
-            for j in flow_dict[i]:
-                energy += flow_dict[i][j]
-            if energy >= i.demand:
-                prodUsed.append(i)
-            else:
-                prodNotFullyUsed.append(i)
-
-        edge_labels=dict([((u, v,), d['weight']) for u, v, d in graph.edges(data=True)])
-        nx.draw_networkx_edge_labels(graph, pos, edge_labels=edge_labels)
-        # colors = [1.0 if i in prod else 0.0 for i in graph.nodes()]
-
-        # nx.draw(graph, pos, node_color=colors)
-        pylab.show()
 
         return flow_cost, flow_dict

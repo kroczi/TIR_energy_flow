@@ -1,3 +1,4 @@
+import thread
 import threading
 
 from ospf import AdminPacket
@@ -27,22 +28,26 @@ class EventGenerator(object):
                                           another_router_id=another_router_id, demand=demand,
                                           filename=filename), None)
 
+    def show_graph(self):
+        self._router.show_graph()
+
+    def stop_simulation(self):
+        self._router.stop()
+
 
 class InputThread(threading.Thread):
     def __init__(self, generator):
         super(InputThread, self).__init__()
         self._generator = generator
-        self.daemon = True
 
     def run(self):
         while True:
-            value = raw_input()
-            print(value)
-            value = value.split()
+            value = raw_input().split()
 
             if len(value) < 1:
                 continue
             elif value[0] == "q":
+                self._generator.stop_simulation()
                 break
             elif value[0] == "al":
                 if len(value) != 6:
@@ -67,3 +72,8 @@ class InputThread(threading.Thread):
                     self._generator.reset_router(value[1], another_router_id=value[2])
                 elif len(value) == 4:
                     self._generator.reset_router(value[1], another_router_id=value[2], demand=int(value[3]))
+
+            elif value[0] == "sg":
+                self._generator.show_graph()
+
+        thread.interrupt_main()
