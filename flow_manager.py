@@ -2,6 +2,8 @@ import networkx as nx
 
 import matplotlib.pyplot as plt
 import pylab
+import matplotlib.colors as col
+import matplotlib.cm as cmx
 
 
 class FlowManager(object):
@@ -71,32 +73,28 @@ class FlowManager(object):
                 if flow_dict[key][key2] > 0:
                     graph.add_edges_from([(key, key2)], weight=flow_dict[key][key2])
 
-        for node in lsdb:
-            if lsdb[node].demand == 0:
-                demandZero.append(node)
-
-        for i in graph.nodes():
-            if lsdb[i].demand < 0:
+        for node in graph.nodes():
+            if lsdb[node].demand < 0:
                 energy = 0
-                for j in flow_dict[i]:
-                    energy += flow_dict[i][j]
-                if energy + lsdb[i].demand >= 0:
-                    prodUsed.append(i)
+                for rec in flow_dict[node]:
+                    energy += flow_dict[node][rec]
+                if energy + lsdb[node].demand >= 0:
+                    prodUsed.append(node)
                 else:
-                    prodNotFullyUsed.append(i)
-
-        for i in graph.nodes():
-            if lsdb[i].demand > 0:
+                    prodNotFullyUsed.append(node)
+            elif lsdb[node].demand > 0:
                 energy = 0
-                for j in flow_dict:
+                for rec in flow_dict:
                     try:
-                        energy += flow_dict[j][i]
+                        energy += flow_dict[rec][node]
                     except:
                         pass
-                if energy >= lsdb[i].demand:
-                    consFull.append(i)
+                if energy >= lsdb[node].demand:
+                    consFull.append(node)
                 else:
-                    consNotFull.append(i)
+                    consNotFull.append(node)
+            else:
+                demandZero.append(node)
 
         print lsdb
         print flow_dict
@@ -108,20 +106,54 @@ class FlowManager(object):
 
         pos = nx.spring_layout(graph)
 
-        edge_labels=dict([((u, v,), d['weight']) for u, v, d in graph.edges(data=True)])
-        nx.draw_networkx_edge_labels(graph, pos, edge_labels=edge_labels)
-        colors = []
-        for n in graph.nodes():
-            if n in prodUsed:
-                colors.append('#0000FF')
-            elif n in prodNotFullyUsed:
-                colors.append('#00FF00')
-            elif n in demandZero:
-                colors.append('#FFFF00')
-            elif n in consFull:
-                colors.append('#FF0000')
-            elif n in consNotFull:
-                colors.append('#FF8000')
+        val_map = {}
+        for node in prodUsed:
+            val_map[node] = 1
+        for node in prodNotFullyUsed:
+            val_map[node] = 2
+        for node in demandZero:
+            val_map[node] = 3
+        for node in consFull:
+            val_map[node] = 4
+        for node in consNotFull:
+            val_map[node] = 5
+        colorLegend = {'Used producers': 1, 'Not fully used producers': 2, 'With zero demand': 3,
+                       'Satisfied consumers': 4, 'Not satisfied consumers': 5}
 
-        nx.draw(graph, pos, node_color=colors)
-        pylab.show()
+        values = [val_map.get(node, 0) for node in graph.nodes()]
+        jet = cm = plt.get_cmap('jet')
+        cNorm = col.Normalize(vmin=0, vmax=max(values))
+        scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=jet)
+
+        f = plt.figure(1)
+        ax = f.add_subplot(1, 1, 1)
+        for label in colorLegend:
+            ax.plot([0], [0], color=scalarMap.to_rgba(colorLegend[label]), label=label)
+        nx.draw_networkx(graph, pos, cmap=jet, vmin=0, vmax=max(values), node_color=values, with_labels=True, ax=ax)
+
+        edge_labels = dict([((u, v,), d['weight']) for u, v, d in graph.edges(data=True)])
+        nx.draw_networkx_edge_labels(graph, pos, edge_labels=edge_labels)
+        # colors = []
+        # for n in graph.nodes():
+        #     if n in prodUsed:
+        #         colors.append(colorValues[0])
+        #     elif n in prodNotFullyUsed:
+        #         colors.append(colorValues[1])
+        #     elif n in demandZero:
+        #         colors.append(colorValues[2])
+        #     elif n in consFull:
+        #         colors.append(colorValues[3])
+        #     elif n in consNotFull:
+        #         colors.append(colorValues[4])
+
+
+        plt.axis('off')
+        f.set_facecolor('w')
+        plt.legend()
+        f.tight_layout()
+        plt.show()
+
+        # nx.draw(graph, pos, node_color=colors)
+        #
+        # plt.legend()
+        # pylab.show()
