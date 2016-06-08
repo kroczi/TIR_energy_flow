@@ -1,7 +1,6 @@
 import networkx as nx
 
 import matplotlib.pyplot as plt
-import pylab
 import matplotlib.colors as col
 import matplotlib.cm as cmx
 
