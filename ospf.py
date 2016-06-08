@@ -36,7 +36,6 @@ AGE_INTERVAL = _scale_time(1)  # 1 minute
 LS_REFRESH_TIME = _scale_time(30)  # 30 minutes
 MAX_AGE = _scale_time(60)  # 1 hour
 
-
 class LinkStatePacket(object):
     def __init__(self, router_id, demand, age, seq_no, networks):
         self.adv_router = router_id
