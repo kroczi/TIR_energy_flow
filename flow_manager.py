@@ -1,6 +1,7 @@
 import networkx as nx
 
 import matplotlib.pyplot as plt
+import pylab
 
 
 class FlowManager(object):
@@ -58,13 +59,69 @@ class FlowManager(object):
         return flow_cost, flow_dict
 
     @staticmethod
-    def present_flow(flow_dict):
+    def present_flow(flow_dict, lsdb):
+        prodUsed = []
+        prodNotFullyUsed = []
+        demandZero = []
+        consFull = []
+        consNotFull = []
         graph = nx.DiGraph()
         for key in flow_dict:
             for key2 in flow_dict[key]:
                 if flow_dict[key][key2] > 0:
-                    graph.add_edge(key, key2)
+                    graph.add_edges_from([(key, key2)], weight=flow_dict[key][key2])
+
+        for node in lsdb:
+            if lsdb[node].demand == 0:
+                demandZero.append(node)
+
+        for i in graph.nodes():
+            if lsdb[i].demand < 0:
+                energy = 0
+                for j in flow_dict[i]:
+                    energy += flow_dict[i][j]
+                if energy + lsdb[i].demand >= 0:
+                    prodUsed.append(i)
+                else:
+                    prodNotFullyUsed.append(i)
+
+        for i in graph.nodes():
+            if lsdb[i].demand > 0:
+                energy = 0
+                for j in flow_dict:
+                    try:
+                        energy += flow_dict[j][i]
+                    except:
+                        pass
+                if energy >= lsdb[i].demand:
+                    consFull.append(i)
+                else:
+                    consNotFull.append(i)
+
+        print lsdb
+        print flow_dict
+        print prodUsed
+        print prodNotFullyUsed
+        print demandZero
+        print consFull
+        print consNotFull
 
         pos = nx.spring_layout(graph)
-        nx.draw(graph, pos)
-        plt.show()
+
+        edge_labels=dict([((u, v,), d['weight']) for u, v, d in graph.edges(data=True)])
+        nx.draw_networkx_edge_labels(graph, pos, edge_labels=edge_labels)
+        colors = []
+        for n in graph.nodes():
+            if n in prodUsed:
+                colors.append('#0000FF')
+            elif n in prodNotFullyUsed:
+                colors.append('#00FF00')
+            elif n in demandZero:
+                colors.append('#FFFF00')
+            elif n in consFull:
+                colors.append('#FF0000')
+            elif n in consNotFull:
+                colors.append('#FF8000')
+
+        nx.draw(graph, pos, node_color=colors)
+        pylab.show()

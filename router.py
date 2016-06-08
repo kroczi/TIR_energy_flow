@@ -87,7 +87,7 @@ class Router(object):
         # TODO: Handle consumer doesn't get sufficient energy.
 
     def show_graph(self):
-        FlowManager.present_flow(self._energy_flow)
+        FlowManager.present_flow(self._energy_flow, self._lsdb)
 
     def _break_adjacency(self, neighbor_id):
         log('Break adjacency.')
