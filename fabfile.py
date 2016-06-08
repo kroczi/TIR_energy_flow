@@ -1,6 +1,6 @@
 from fabric.api import *
 
-env.hosts = ['shnek.tk']
+env.hosts = ['192.168.17.80']
 location = '~/smartgrid'
 repo_url = 'https://github.com/kroczi/TIR_energy_flow.git'
 cmd = 'python {0}/main.py -n {1} -d 0 -I'
