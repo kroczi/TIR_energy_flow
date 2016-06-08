@@ -119,7 +119,18 @@ class FlowManager(object):
 
         edge_labels=dict([((u, v,), d['weight']) for u, v, d in graph.edges(data=True)])
         nx.draw_networkx_edge_labels(graph, pos, edge_labels=edge_labels)
-        colors = ['r' if i in prodUsed else 'b' for i in graph.nodes()]
+        colors = []
+        for n in graph.nodes():
+            if n in prodUsed:
+                colors.append('#0000FF')
+            elif n in prodNotFullyUsed:
+                colors.append('#00FF00')
+            elif n in demandZero:
+                colors.append('#FFFF00')
+            elif n in consFull:
+                colors.append('#FF0000')
+            elif n in consNotFull:
+                colors.append('#FF8000')
 
         nx.draw(graph, pos, node_color=colors)
         pylab.show()
