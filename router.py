@@ -1,6 +1,9 @@
 import ConfigParser
+from PyQt4 import QtCore
+
 import sys
 
+from interface import Interface
 import ospf
 from flow_manager import FlowManager
 from interface import Interface
