@@ -19,29 +19,39 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-import sys
+import argparse
 
 import interface
 import router
-from generator import EventGenerator, InputThread
 from timer import Timer
 
 
 def main():
-    if len(sys.argv) < 2:
-        print('You must pass path to the config file or hostname [with demand].')
-        sys.exit(1)
+    args = parse_args()
 
-    demand = int(sys.argv[2]) if len(sys.argv) > 2 else 0
     rrouter = router.Router()
-    rrouter.init_router(sys.argv[1], demand)
+    rrouter.init_router(args.confOrName, args.demand)
 
     router_timer = Timer(1, interface.poll)
     router_timer.start()
     rrouter.start()
 
-    InputThread(EventGenerator(rrouter)).start()
+    if(args.interactive):
+        from generator import InputThread
+        InputThread(rrouter).start()
 
+
+def parse_args():
+    parser = argparse.ArgumentParser(description='Smart grid control module')
+
+    name_or_config = parser.add_mutually_exclusive_group(required=True)
+    name_or_config.add_argument('-c', '--config', dest='confOrName')
+    name_or_config.add_argument('-n', '--name', dest='confOrName')
+
+    parser.add_argument('-d', '--demand', type=int, dest='demand', default=0)
+    parser.add_argument('-I', dest='interactive', action='store_false', default=True)
+
+    return parser.parse_args()
 
 if __name__ == '__main__':
     main()

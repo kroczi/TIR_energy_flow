@@ -2,6 +2,7 @@ import thread
 import threading
 
 from ospf import AdminPacket
+from plotter import Plotter
 
 
 class EventGenerator(object):
@@ -28,17 +29,15 @@ class EventGenerator(object):
                                           another_router_id=another_router_id, demand=demand,
                                           filename=filename), None)
 
-    def show_graph(self):
-        self._router.show_graph()
-
     def stop_simulation(self):
         self._router.stop()
 
 
 class InputThread(threading.Thread):
-    def __init__(self, generator):
+    def __init__(self, router, plotter=None):
         super(InputThread, self).__init__()
-        self._generator = generator
+        self._plotter = Plotter(router)
+        self._generator = EventGenerator(router)
 
     def run(self):
         while True:
@@ -74,6 +73,6 @@ class InputThread(threading.Thread):
                     self._generator.reset_router(value[1], another_router_id=value[2], demand=int(value[3]))
 
             elif value[0] == "sg":
-                self._generator.show_graph()
+                self._plotter.present_flow()
 
         thread.interrupt_main()
