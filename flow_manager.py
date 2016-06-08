@@ -96,14 +96,6 @@ class FlowManager(object):
             else:
                 demandZero.append(node)
 
-        print lsdb
-        print flow_dict
-        print prodUsed
-        print prodNotFullyUsed
-        print demandZero
-        print consFull
-        print consNotFull
-
         pos = nx.spring_layout(graph)
 
         val_map = {}
@@ -133,27 +125,9 @@ class FlowManager(object):
 
         edge_labels = dict([((u, v,), d['weight']) for u, v, d in graph.edges(data=True)])
         nx.draw_networkx_edge_labels(graph, pos, edge_labels=edge_labels)
-        # colors = []
-        # for n in graph.nodes():
-        #     if n in prodUsed:
-        #         colors.append(colorValues[0])
-        #     elif n in prodNotFullyUsed:
-        #         colors.append(colorValues[1])
-        #     elif n in demandZero:
-        #         colors.append(colorValues[2])
-        #     elif n in consFull:
-        #         colors.append(colorValues[3])
-        #     elif n in consNotFull:
-        #         colors.append(colorValues[4])
-
 
         plt.axis('off')
         f.set_facecolor('w')
         plt.legend()
         f.tight_layout()
         plt.show()
-
-        # nx.draw(graph, pos, node_color=colors)
-        #
-        # plt.legend()
-        # pylab.show()
