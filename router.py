@@ -96,6 +96,9 @@ class Router(object):
     def get_energy_flow(self):
         return self._energy_flow
 
+    def get_lsdb(self):
+        return self._lsdb
+
     def _break_adjacency(self, neighbor_id):
         log('Break adjacency.')
         # Save reference QObject errors
