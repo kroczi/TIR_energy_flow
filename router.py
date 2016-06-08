@@ -25,43 +25,44 @@ def log(msg):
 
 
 class Router(object):
-    def __init__(self, hostname=None, demand=None):
-        if hostname is not None:
-            self._hostname = hostname
-            self._demand = demand
-            self._lsdb = ospf.Database()
-            self._links = {}
-            self._neighbors = {}
-            self._seen = {}
-            self._energy_flow = {}
-            self._init_timers()
-            self._interface = Interface(self)
+    def __init__(self, on_graph_recalculated=None):
+        self._hostname = None
+        self._demand = None
+        self._lsdb = ospf.Database()
+        self._links = {}
+        self._neighbors = {}
+        self._seen = {}
+        self._energy_flow = {}
+        self._init_timers()
+        self._interface = Interface(self)
+        self._on_graph_recalculated = on_graph_recalculated
 
     def __del__(self):
         self.stop()
 
-    def init_router(self, name, demand=0):
-        if not name.endswith(".cfg"):
-            self.__init__(name, demand)
-            return
-        print(name)
-        cfg = ConfigParser.SafeConfigParser()
-        try:
-            cfg.read(str(name))
-        except ConfigParser.MissingSectionHeaderError:
-            print('MissingSectionHeaderError')
-            sys.exit(-1)
+    def configure(self, nameOrHostname, demand=0):
+        if not nameOrHostname.endswith(".cfg"):
+            self._hostname = nameOrHostname
+            self._demand = demand
+        else:
+            cfg = ConfigParser.SafeConfigParser()
+            try:
+                cfg.read(str(nameOrHostname))
+            except ConfigParser.MissingSectionHeaderError:
+                print('MissingSectionHeaderError')
+                sys.exit(-1)
 
-        hostname = cfg.get('Router', 'hostname')
-        demand = int(cfg.get('Router', 'demand'))
-        self.__init__(hostname, demand)
+            self._hostname = cfg.get('Router', 'hostname')
+            self._demand = int(cfg.get('Router', 'demand'))
 
-        links = [i for i in cfg.sections() if i.startswith('Link')]
-        for link in links:
-            link_id = cfg.get(link, 'link')
-            cost = int(cfg.get(link, 'cost'))
-            capacity = int(cfg.get(link, 'capacity'))
-            self.add_link(link_id, cost, capacity)
+            links = [i for i in cfg.sections() if i.startswith('Link')]
+            for link in links:
+                link_id = cfg.get(link, 'link')
+                cost = int(cfg.get(link, 'cost'))
+                capacity = int(cfg.get(link, 'capacity'))
+                self.add_link(link_id, cost, capacity)
+
+        print(self._hostname)
 
     def _init_timers(self):
         log('Init timers.')
@@ -96,6 +97,11 @@ class Router(object):
         flow_cost, flow_dict = self._lsdb.get_flow()
         self._energy_flow = flow_dict[self._hostname]
         log(flow_dict[self._hostname])
+
+        if(flow_dict is not None and self._on_graph_recalculated is not None):
+            # share it with the world if anyone wants it
+            shareable_copy = flow_dict.copy()
+            self._on_graph_recalculated(shareable_copy)
 
         # TODO: Display flow in console / on Galileo
         # TODO: Handle consumer doesn't get sufficient energy.
@@ -248,12 +254,12 @@ class Router(object):
     def reset_router(self, filename, hostname, demand):
         self.stop()
         if filename is not None:
-            self.init_router(filename)
+            self.configure(filename)
         elif hostname is None:
-            self.init_router(self._hostname, self._demand)
+            self.configure(self._hostname, self._demand)
         else:
             demand = demand if demand is not None else 0
-            self.init_router(hostname, demand)
+            self.configure(hostname, demand)
         self.start()
 
         # TODO: Dynamic link insertion/removal, breakdowns generating and/or demand change from console/Galileo

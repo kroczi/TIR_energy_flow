@@ -26,6 +26,7 @@ from PyQt4 import QtCore, QtGui
 import interface
 import router
 from generator import EventGenerator, InputThread
+from plotter import Plotter
 
 
 def main():
@@ -35,9 +36,10 @@ def main():
 
     app = QtGui.QApplication(sys.argv)
 
+    plotter = Plotter()
     demand = int(sys.argv[2]) if len(sys.argv) > 2 else 0
-    rrouter = router.Router()
-    rrouter.init_router(sys.argv[1], demand)
+    rrouter = router.Router(on_graph_recalculated=lambda g: plotter.updateGraph(g))
+    rrouter.configure(sys.argv[1], demand)
 
     router_timer = QtCore.QTimer()
     QtCore.QObject.connect(router_timer, QtCore.SIGNAL('timeout()'), interface.poll)
@@ -46,6 +48,7 @@ def main():
     signal.signal(signal.SIGINT, lambda s, f: app.exit())
 
     rrouter.start()
+    plotter.start()
     InputThread(EventGenerator(rrouter)).start()
 
     sys.exit(app.exec_())

@@ -20,8 +20,6 @@
 # THE SOFTWARE.
 
 import networkx as nx
-import matplotlib.pyplot as plt
-import pylab
 
 TIME_SCALE = 20  # 1 minute (60 seconds) is to 3 seconds (60 / 3 = 20)
 
@@ -36,7 +34,6 @@ DEAD_INTERVAL = 4 * HELLO_INTERVAL  # typical value is 4 times the HELLO_INTERVA
 AGE_INTERVAL = _scale_time(1)  # 1 minute
 LS_REFRESH_TIME = _scale_time(30)  # 30 minutes
 MAX_AGE = _scale_time(60)  # 1 hour
-
 
 class LinkStatePacket(object):
     def __init__(self, router_id, demand, age, seq_no, networks):
@@ -162,24 +159,5 @@ class Database(dict):
         for node in flow_dict.values():
             if 'equalizer' in node:
                 del node['equalizer']
-
-        prod = []
-        cons = []
-        graph = nx.DiGraph()
-        for key in flow_dict:
-            for key2 in flow_dict[key]:
-                if flow_dict[key][key2] > 0:
-                    graph.add_edges_from([(key, key2)], weight=flow_dict[key][key2])
-                    prod.append(key)
-                    cons.append(key2)
-
-        pos = nx.spring_layout(graph)
-
-        edge_labels=dict([((u, v,), d['weight']) for u, v, d in graph.edges(data=True)])
-        nx.draw_networkx_edge_labels(graph, pos, edge_labels=edge_labels)
-        colors = [1.0 if i in prod else 0.0 for i in graph.nodes()]
-
-        nx.draw(graph, pos, node_color=colors)
-        pylab.show()
 
         return flow_cost, flow_dict
