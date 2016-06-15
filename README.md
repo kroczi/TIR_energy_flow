@@ -48,7 +48,7 @@ UDP Multicast. Node determines whether it is interested in a packet based on pac
 The program code need not be changed for each simulated node. The information needed to simulate a node is separately stored in a node configuration file. The configuration file specifies the node's hostname, energy demand, energy links and their ids, costs, and capacities. One can simulate any network topology by carefully assigning the correct interconnections between nodes.
 
 ```
-[Node]
+[Router]
 hostname = Node1
 demand = 5
 
@@ -58,7 +58,7 @@ cost = 8
 capacity = 14
 
 [Link2]
-link = 2
+link = 3
 cost = 4
 capacity = 22
 
